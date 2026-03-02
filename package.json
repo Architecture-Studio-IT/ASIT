@@ -1,10 +1,15 @@
 {
   "devDependencies": {
+    "@commitlint/cli": "^20.4.2",
+    "@commitlint/config-conventional": "^20.4.2",
     "cz-conventional-changelog": "^3.3.0"
   },
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
     }
+  },
+  "scripts": {
+    "commitlint": "commitlint --from=origin/main --to=HEAD"
   }
 }
