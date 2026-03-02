@@ -2,7 +2,8 @@
   "devDependencies": {
     "@commitlint/cli": "^20.4.2",
     "@commitlint/config-conventional": "^20.4.2",
-    "cz-conventional-changelog": "^3.3.0"
+    "cz-conventional-changelog": "^3.3.0",
+    "prisma": "^7.4.2"
   },
   "config": {
     "commitizen": {
@@ -11,5 +12,8 @@
   },
   "scripts": {
     "commitlint": "commitlint --from=origin/main --to=HEAD"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.4.2"
   }
 }
