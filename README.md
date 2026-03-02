@@ -21,6 +21,46 @@ ASIT is built around three core pillars:
 
 The platform is designed to be accessible, sovereign, and compliant with European regulations, while remaining powerful enough for professional use cases.
 
+## Environment configuration
+The project relies on a dotenv file to store sensitive credentials. An example template is provided in `.env.exemple`.
+
+### Getting started
+1. Copy the example file to `.env`:
+   ```bash
+   cp .env.exemple .env  # or copy manually
+   ```
+2. Fill in the values with your preferred credentials:
+   ```dotenv
+   POSTGRES_USER=
+   POSTGRES_PASSWORD=
+   POSTGRES_DB=
+
+   PGADMIN_DEFAULT_EMAIL=
+   PGADMIN_DEFAULT_PASSWORD=
+   ```
+
+The values from `.env` are automatically interpolated by `docker-compose` when you run the services.
+
+## Dockerization 🐳
+This repository includes a `docker-compose.yml`
+
+### Quick commands
+```bash
+# build and start containers in detached mode
+docker compose up -d
+
+# stop and remove containers, networks, and volumes
+docker compose down -v
+
+# view logs for all services
+docker compose logs -f
+
+# run a one-off command in a service (e.g. database migrations)
+docker compose run --rm <service> <command>
+```
+
+If you modify `.env` after containers are running, restart them so the new variables take effect.
+
 ## Using Commitizen 🛠️
 Commitizen helps maintain a consistent commit history by guiding you through the process of writing conventional commits.
 
