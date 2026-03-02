@@ -13,8 +13,9 @@
 
   "dependencies": {
     "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "@prisma/client": "^7.4.2"
   },
 
   "devDependencies": {
@@ -29,7 +30,8 @@
 
     "@commitlint/cli": "^20.4.2",
     "@commitlint/config-conventional": "^20.4.2",
-    "cz-conventional-changelog": "^3.3.0"
+    "cz-conventional-changelog": "^3.3.0",
+    "prisma": "^7.4.2"
   },
 
   "config": {
