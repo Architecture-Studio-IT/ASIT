@@ -1,6 +1,4 @@
-![ASIT logo](assets/logo.png)
-
-# ASIT
+![ASIT logo](assets/ASIT_logo.png)
 Asit fullstack app
 
 ![Commitlint](https://github.com/Architecture-Studio-IT/ASIT/actions/workflows/commitlint.yml/badge.svg)
