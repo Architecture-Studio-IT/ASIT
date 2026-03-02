@@ -1,5 +1,10 @@
+![ASIT logo](assets/logo.png)
+
 # ASIT
 Asit fullstack app
+
+![Commitlint](https://github.com/Architecture-Studio-IT/ASIT/actions/workflows/commitlint.yml/badge.svg)
+
 
 ## Using Commitizen 🛠️
 Commitizen helps maintain a consistent commit history by guiding you through the process of writing conventional commits.
