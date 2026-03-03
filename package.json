@@ -7,7 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "commitlint": "commitlint --from=origin/main --to=HEAD"
+    "commitlint": "commitlint --from=origin/main --to=HEAD",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:dbpush": "prisma db push",
+    "prisma:seed": "npx ts-node prisma/seed.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^7.4.2",
@@ -29,7 +34,8 @@
     "eslint-config-next": "16.1.6",
     "prisma": "^7.4.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "ts-node": "^10.9.1"
   },
   "config": {
     "commitizen": {
