@@ -2,9 +2,7 @@
   "$schema": "https://typedoc.org/schema.json",
   "name": "ASIT – Architecture Studio IT",
   "entryPointStrategy": "expand",
-  "entryPoints": [
-    "./app"
-  ],
+  "entryPoints": ["./app"],
   "out": "docs",
   "tsconfig": "./tsconfig.typedoc.json",
   "readme": "README.md",

@@ -9,7 +9,9 @@
     "lint": "eslint",
     "commitlint": "commitlint --from=origin/main --to=HEAD",
     "docs": "typedoc",
-    "docs:watch": "typedoc --watch"
+    "docs:watch": "typedoc --watch",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@prisma/client": "^7.4.2",
@@ -29,6 +31,9 @@
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "prisma": "^7.4.2",
     "tailwindcss": "^4",
     "typedoc": "^0.28.17",
