@@ -2,7 +2,6 @@
   "name": "asit",
   "version": "0.1.0",
   "private": true,
-
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,30 +9,28 @@
     "lint": "eslint",
     "commitlint": "commitlint --from=origin/main --to=HEAD"
   },
-
   "dependencies": {
+    "@prisma/client": "^7.4.2",
+    "konva": "^10.2.0",
     "next": "16.1.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "@prisma/client": "^7.4.2"
+    "react-konva": "^19.2.3"
   },
-
   "devDependencies": {
+    "@commitlint/cli": "^20.4.2",
+    "@commitlint/config-conventional": "^20.4.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "prisma": "^7.4.2",
     "tailwindcss": "^4",
-    "typescript": "^5",
-
-    "@commitlint/cli": "^20.4.2",
-    "@commitlint/config-conventional": "^20.4.2",
-    "cz-conventional-changelog": "^3.3.0",
-    "prisma": "^7.4.2"
+    "typescript": "^5"
   },
-
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
