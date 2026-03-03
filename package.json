@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "commitlint": "commitlint --from=origin/main --to=HEAD"
+    "commitlint": "commitlint --from=origin/main --to=HEAD",
+    "docs": "typedoc",
+    "docs:watch": "typedoc --watch"
   },
   "dependencies": {
     "@prisma/client": "^7.4.2",
@@ -29,6 +31,7 @@
     "eslint-config-next": "16.1.6",
     "prisma": "^7.4.2",
     "tailwindcss": "^4",
+    "typedoc": "^0.28.17",
     "typescript": "^5"
   },
   "config": {
