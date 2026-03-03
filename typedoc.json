@@ -1,0 +1,25 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "ASIT – Architecture Studio IT",
+  "entryPointStrategy": "expand",
+  "entryPoints": ["./app"],
+  "out": "docs",
+  "tsconfig": "./tsconfig.typedoc.json",
+  "readme": "README.md",
+  "includeVersion": true,
+  "categorizeByGroup": true,
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "exclude": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/next-env.d.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ],
+  "githubPages": false,
+  "hideGenerator": false
+}
