@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+build
+docs
+public
+*.lock
+package-lock.json
+next-env.d.ts
+.github/ISSUE_TEMPLATE/config.yml
