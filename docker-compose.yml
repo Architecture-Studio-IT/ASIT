@@ -50,6 +50,19 @@ services:
       db:
         condition: service_healthy
 
+  # Prisma migrations runner
+  migrate:
+    image: node:20-alpine
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace:delegated
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+    command: sh -c "npm install -g prisma@7.4.2 && prisma db push --config prisma/migrate.config.mjs"
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   db: {}
   pgadmin-data: {}

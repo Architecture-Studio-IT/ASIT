@@ -1,0 +1,65 @@
+// ── générateur JavaScript/TypeScript ───────────────────────────────────────────
+generator client {
+  provider        = "prisma-client-js"
+  // binaryTargets  = ["native"]
+}
+
+// ── source de données PostgreSQL ───────────────────────────────────────────────
+// connection URL is now moved to `prisma.config.ts` (required by Prisma 7+)
+// see https://pris.ly/d/config-datasource
+datasource db {
+  provider          = "postgresql"
+  // `url` removed; migrations will read from prisma.config.ts
+  // you can still specify a shadow database there as well
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  passwordhash  String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Manufacturer {
+  id        Int       @id @default(autoincrement())
+  name      String
+  website   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  products  Product[]
+}
+
+model Product {
+  id                Int            @id @default(autoincrement())
+  manufacturer      Manufacturer  @relation(fields: [manufacturer_id], references: [id])
+  manufacturer_id   Int
+  product_type      String
+  name              String
+  sku               String
+  image_url         String
+  ethernet_ports    Int
+  sfp_ports         Int
+  wifi_standard     String
+  console_port      Boolean
+  cpu_cores         Int
+  ram_gb            Int
+  rack_units        Int
+  power_supply_count Int
+  storage_slots     Int
+  poe_support       Boolean
+  max_throughput    Int
+  lan_speed         Int
+  wan_speed         Int
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  product_specs Product_specs?
+}
+
+model Product_specs {
+  id Int @id @default(autoincrement())
+  product Product @relation(fields: [product_id], references: [id])
+  product_id Int @unique
+}
+
