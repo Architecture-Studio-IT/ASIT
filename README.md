@@ -37,29 +37,53 @@ The project relies on a dotenv file to store sensitive credentials. An example t
 
    PGADMIN_DEFAULT_EMAIL=
    PGADMIN_DEFAULT_PASSWORD=
+
+   # For Prisma CLI (local, outside Docker)
+   DATABASE_URL=postgresql://user:password@localhost:5432/dbname
    ```
 
-The values from `.env` are automatically interpolated by `docker-compose` when you run the services.
+> `DATABASE_URL` is automatically injected into the app container by docker-compose.
+> You only need to set it manually in `.env` when running Prisma CLI commands locally (e.g. `npx prisma migrate`).
 
 ## Dockerization 🐳
-This repository includes a `docker-compose.yml`
 
-### Quick commands
+The app, the database, and pgAdmin are all containerized. Two modes are available.
+
+### Development — hot-reload, source code mounted
+
 ```bash
-# build and start containers in detached mode
-docker compose up -d
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
 
-# stop and remove containers, networks, and volumes
+### Production — optimized build
+
+```bash
+docker compose up --build
+```
+
+| Service  | URL                   |
+| -------- | --------------------- |
+| App      | http://localhost:3000 |
+| pgAdmin  | http://localhost:5050 |
+| Postgres | localhost:5432        |
+
+### Other commands
+
+```bash
+# stop containers
+docker compose down
+
+# stop + delete volumes (resets the database)
 docker compose down -v
 
-# view logs for all services
+# view logs
 docker compose logs -f
 
-# run a one-off command in a service (e.g. database migrations)
+# run a one-off command in a service
 docker compose run --rm <service> <command>
 ```
 
-If you modify `.env` after containers are running, restart them so the new variables take effect.
+> If you modify `.env` after containers are running, restart them so the new variables take effect.
 
 ## Using Commitizen 🛠️
 Commitizen helps maintain a consistent commit history by guiding you through the process of writing conventional commits.
