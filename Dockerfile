@@ -5,6 +5,7 @@ WORKDIR /app
 # Dev
 FROM base AS dev
 COPY package*.json ./
+COPY prisma ./prisma
 RUN npm install
 EXPOSE 3000
 CMD ["npm", "run", "dev"]
@@ -12,10 +13,10 @@ CMD ["npm", "run", "dev"]
 # Builder
 FROM base AS builder
 COPY package*.json ./
+COPY prisma ./prisma
 RUN npm ci
 COPY . .
-# when prisma is setup uncomment this line
-# RUN npx prisma generate
+RUN npx prisma generate
 RUN npm run build
 
 # Runner (production)
