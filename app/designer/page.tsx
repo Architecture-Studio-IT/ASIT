@@ -13,7 +13,7 @@ export default function DesignerPage() {
   const [activeTab, setActiveTab] = useState("Properties");
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
+    <div className="flex h-full">
       <EquipmentSidebar />
 
       <div className="flex-1 flex flex-col">

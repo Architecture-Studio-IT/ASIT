@@ -9,7 +9,7 @@ export default function DesignerToolbar({ activeView, onViewChange }: DesignerTo
   return (
     <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-white">
       <div className="flex items-center gap-2">
-        <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-accent text-[#1a1a2e] rounded-lg hover:bg-accent/90 transition-colors">
+        <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-accent text-foreground rounded-lg hover:bg-accent/90 transition-colors">
           <Save size={14} />
           Save
         </button>
