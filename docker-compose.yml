@@ -7,11 +7,16 @@ services:
     restart: always
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/${RABBITMQ_VHOST:-}
     ports:
       - "3000:3000"
     depends_on:
       db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - main-net
 
   # Database
   db:
@@ -31,6 +36,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - main-net
 
   # pgAdmin
   pgadmin:
@@ -49,6 +56,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - main-net
 
   # Prisma migrations runner
   migrate:
@@ -62,14 +71,36 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - main-net
 
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: asit-rabbitmq
+    restart: always
+    hostname: asit-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "127.0.0.1:5672:5672"       # AMQP — localhost only
+      - "127.0.0.1:15672:15672"     # Management UI — localhost only
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - main-net
+
+networks:
+  main-net:
+    driver: bridge
 
 volumes:
   db: {}
