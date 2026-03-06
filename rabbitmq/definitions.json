@@ -1,0 +1,78 @@
+{
+  "vhosts": [
+    { "name": "/" }
+  ],
+  "users": [
+    {
+      "name": "admin",
+      "password_hash": "Vf/kGppUN5R3SyGQLzd7i/zkYlf6ah0v9gBgsgQGkfk6VEqU",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": "management"
+    },
+    {
+      "name": "scraper",
+      "password_hash": "sJD+sMVf3zt8L3qgEq2Msw42E3QQsiKOeX4dvAnAUOPhAB+z",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ""
+    },
+    {
+      "name": "orchestrator",
+      "password_hash": "+vVyrFRYYYkbMX54TuReuKKGDSrajTaug3NFkK3pc8NF0t01",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ""
+    }
+  ],
+  "permissions": [
+    {
+      "user": "admin",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "scraper",
+      "vhost": "/",
+      "configure": "products",
+      "write": "amq\\.default|products",
+      "read": ""
+    },
+    {
+      "user": "orchestrator",
+      "vhost": "/",
+      "configure": "products|q\\.db|q\\.es",
+      "write": "amq\\.default|q\\.db|q\\.es",
+      "read": "products"
+    }
+  ],
+  "queues": [
+    {
+      "name": "products",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 86400000,
+        "x-max-length": 100000
+      }
+    },
+    {
+      "name": "q.db",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "q.es",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 86400000
+      }
+    }
+  ]
+}
