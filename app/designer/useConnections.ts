@@ -2,10 +2,28 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type Konva from "konva";
 import type { Connection, Waypoint } from "./designer-data";
-import { NODE_W, NODE_H } from "./constants";
+import { NODE_W, NODE_H, STORAGE_KEYS } from "./constants";
+
+function parseConnKey(key: string): [string, string] {
+  const [from, to] = key.split("->>");
+  return [from, to];
+}
+
+const STORAGE_KEY = STORAGE_KEYS.CONNECTIONS;
 
 export function useConnections(initial: Connection[]) {
-  const [connections, setConnections] = useState<Connection[]>(initial);
+  const [connections, setConnections] = useState<Connection[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return initial;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(connections));
+  }, [connections]);
+
   const [draggingFrom, setDraggingFrom] = useState<string | null>(null);
   const [dragTarget, setDragTarget] = useState<{ x: number; y: number } | null>(null);
   const [selectedConnection, setSelectedConnection] = useState<string | null>(null);
@@ -18,7 +36,7 @@ export function useConnections(initial: Connection[]) {
         const tag = (e.target as HTMLElement).tagName;
         if (tag === "INPUT" || tag === "TEXTAREA") return;
 
-        const [from, to] = selectedConnection.split("->>");
+        const [from, to] = parseConnKey(selectedConnection);
         setConnections((prev) => prev.filter((c) => !(c.from === from && c.to === to)));
         setSelectedConnection(null);
       }
@@ -94,7 +112,7 @@ export function useConnections(initial: Connection[]) {
   const handleConnectionContextMenu = useCallback(
     (connKey: string, e: KonvaEventObject<PointerEvent>) => {
       e.evt.preventDefault();
-      const [from, to] = connKey.split("->>");
+      const [from, to] = parseConnKey(connKey);
       setConnections((prev) => prev.filter((c) => !(c.from === from && c.to === to)));
       setSelectedConnection(null);
     },
@@ -124,7 +142,7 @@ export function useConnections(initial: Connection[]) {
   // --- Waypoint handlers ---
   const addWaypoint = useCallback(
     (connKey: string, x: number, y: number, segmentIndex: number) => {
-      const [from, to] = connKey.split("->>");
+      const [from, to] = parseConnKey(connKey);
       setConnections((prev) =>
         prev.map((c) => {
           if (c.from !== from || c.to !== to) return c;
@@ -140,7 +158,7 @@ export function useConnections(initial: Connection[]) {
 
   const moveWaypoint = useCallback(
     (connKey: string, wpIndex: number, x: number, y: number) => {
-      const [from, to] = connKey.split("->>");
+      const [from, to] = parseConnKey(connKey);
       setConnections((prev) =>
         prev.map((c) => {
           if (c.from !== from || c.to !== to) return c;
@@ -157,7 +175,7 @@ export function useConnections(initial: Connection[]) {
 
   const removeWaypoint = useCallback(
     (connKey: string, wpIndex: number) => {
-      const [from, to] = connKey.split("->>");
+      const [from, to] = parseConnKey(connKey);
       setConnections((prev) =>
         prev.map((c) => {
           if (c.from !== from || c.to !== to) return c;
@@ -169,6 +187,10 @@ export function useConnections(initial: Connection[]) {
     },
     [],
   );
+
+  const removeNodeConnections = useCallback((nodeId: string) => {
+    setConnections((prev) => prev.filter((c) => c.from !== nodeId && c.to !== nodeId));
+  }, []);
 
   return {
     connections,
@@ -188,5 +210,6 @@ export function useConnections(initial: Connection[]) {
     moveWaypoint,
     onWaypointDragEnd,
     removeWaypoint,
+    removeNodeConnections,
   };
 }

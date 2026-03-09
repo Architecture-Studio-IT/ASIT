@@ -85,7 +85,6 @@ export interface PropertyConfig {
   ram: number;
   storage: string[];
   estimatedPrice: number;
-  selectedCount: number;
 }
 
 export const defaultProperties: PropertyConfig = {
@@ -93,5 +92,4 @@ export const defaultProperties: PropertyConfig = {
   ram: 32,
   storage: ["512GB NVMe SSD", "1TB SATA SSD", "2TB HDD"],
   estimatedPrice: 2450,
-  selectedCount: 3,
 };
