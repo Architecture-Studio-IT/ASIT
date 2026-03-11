@@ -9,8 +9,6 @@ generator client {
 // see https://pris.ly/d/config-datasource
 datasource db {
   provider = "postgresql"
-  // `url` removed; migrations will read from prisma.config.ts
-  // you can still specify a shadow database there as well
 }
 
 model User {

@@ -1,4 +1,4 @@
-import { Monitor, Server, Wifi } from "lucide-react";
+import { Monitor, Server, Wifi, HardDrive, Radio } from "lucide-react";
 
 export const GRID_SIZE = 20;
 export const NODE_W = 140;
@@ -12,24 +12,32 @@ export const SELECTED_COLOR = "#E5483E";
 export const typeColors: Record<string, { stroke: string }> = {
   server: { stroke: "#42EB90" },
   switch: { stroke: ACCENT_COLOR },
+  router: { stroke: "#F59E0B" },
+  access_point: { stroke: "#8B5CF6" },
   workstation: { stroke: "#E5E7EB" },
 };
 
 export const typeIcons: Record<string, typeof Monitor> = {
   server: Server,
   switch: Wifi,
+  router: HardDrive,
+  access_point: Radio,
   workstation: Monitor,
 };
 
 export const typeLabels: Record<string, string> = {
   server: "Server",
   switch: "Network Switch",
+  router: "Router",
+  access_point: "Access Point",
   workstation: "Workstation",
 };
 
 export const typePrices: Record<string, number> = {
   server: 4500,
   switch: 1200,
+  router: 800,
+  access_point: 350,
   workstation: 2450,
 };
 
