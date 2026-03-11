@@ -147,7 +147,7 @@ export default function DashboardPage() {
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Projects" value={totalProjects} icon={FolderOpen} />
-        <StatCard label="Active Designs" value={totalProjects} icon={Zap} />
+        <StatCard label="Total Connections" value={totalConnections} icon={Zap} />
         <StatCard label="Estimated Budget" value={`$${totalBudget.toLocaleString()}`} icon={Cpu} />
         <StatCard label="Devices Count" value={totalDevices} icon={Monitor} />
       </div>
