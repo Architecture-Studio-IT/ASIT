@@ -80,7 +80,7 @@ export const initialConnections: Connection[] = [
   { from: "node-2", to: "node-5" },
 ];
 
-export interface PropertyConfig {
+interface PropertyConfig {
   cpuModel: string;
   ram: number;
   storage: string[];

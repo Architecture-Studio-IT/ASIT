@@ -6,7 +6,7 @@ function snap(v: number) {
   return Math.round(v / GRID_SIZE) * GRID_SIZE;
 }
 
-export function resolveOverlap(
+function resolveOverlap(
   x: number,
   y: number,
   nodeId: string,
@@ -42,8 +42,6 @@ export function resolveOverlap(
   return { x: nx, y: ny };
 }
 
-const STORAGE_KEY = STORAGE_KEYS.NODES;
-
 function getMaxId(nodes: CanvasNode[]): number {
   return nodes.reduce((max, n) => {
     const num = parseInt(n.id.replace("node-", ""), 10);
@@ -53,10 +51,12 @@ function getMaxId(nodes: CanvasNode[]): number {
 
 let nextId = 0;
 
-export function useCanvasNodes(initial: CanvasNode[]) {
+export function useCanvasNodes(initial: CanvasNode[], projectId: string) {
+  const storageKey = STORAGE_KEYS.NODES(projectId);
+
   const [nodes, setNodes] = useState<CanvasNode[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed: CanvasNode[] = JSON.parse(saved);
         nextId = getMaxId(parsed) + 1;
@@ -68,8 +68,8 @@ export function useCanvasNodes(initial: CanvasNode[]) {
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes));
-  }, [nodes]);
+    localStorage.setItem(storageKey, JSON.stringify(nodes));
+  }, [nodes, storageKey]);
 
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
 

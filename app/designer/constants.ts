@@ -27,10 +27,18 @@ export const typeLabels: Record<string, string> = {
   workstation: "Workstation",
 };
 
+export const typePrices: Record<string, number> = {
+  server: 4500,
+  switch: 1200,
+  workstation: 2450,
+};
+
 export const STORAGE_KEYS = {
-  NODES: "designer-nodes",
-  CONNECTIONS: "designer-connections",
-  NOTES: "designer-notes",
+  PROJECTS: "designer-projects",
+  ACTIVE_PROJECT: "designer-active-project",
+  NODES: (projectId: string) => `designer-nodes-${projectId}`,
+  CONNECTIONS: (projectId: string) => `designer-connections-${projectId}`,
+  NOTES: (projectId: string) => `designer-notes-${projectId}`,
 } as const;
 
 export const EQUIPMENT_MIME_TYPE = "application/equipment";
