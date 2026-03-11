@@ -151,6 +151,26 @@ export function BezierConnection({
           ref.setAttr("_toX", toX);
           ref.setAttr("_toY", toY);
           ref.setAttr("_waypoints", waypoints);
+          // Provide bounding rect so Konva's Group visibility check
+          // doesn't cull connections when the canvas origin is off-screen
+          ref.getSelfRect = () => {
+            const fx = ref.getAttr("_fromX") ?? fromX;
+            const fy = ref.getAttr("_fromY") ?? fromY;
+            const tx = ref.getAttr("_toX") ?? toX;
+            const ty = ref.getAttr("_toY") ?? toY;
+            const wps: Waypoint[] = ref.getAttr("_waypoints") ?? waypoints;
+            const allX = [fx, tx, ...wps.map((w) => w.x)];
+            const allY = [fy, ty, ...wps.map((w) => w.y)];
+            const pad = 60;
+            const minX = Math.min(...allX) - pad;
+            const minY = Math.min(...allY) - pad;
+            return {
+              x: minX,
+              y: minY,
+              width: Math.max(...allX) - minX + pad,
+              height: Math.max(...allY) - minY + pad,
+            };
+          };
           shapeRefs.current!.set(connKey, ref);
         } else {
           shapeRefs.current!.delete(connKey);
@@ -181,8 +201,8 @@ export function BezierConnection({
         const pointer = stage.getPointerPosition();
         if (!pointer) return;
         const s = stage.scaleX();
-        const x = pointer.x / s;
-        const y = pointer.y / s;
+        const x = (pointer.x - stage.x()) / s;
+        const y = (pointer.y - stage.y()) / s;
 
         const allPoints = [
           { x: fromX, y: fromY },

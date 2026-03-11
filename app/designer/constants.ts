@@ -1,3 +1,6 @@
+import { Monitor, Server, Wifi } from "lucide-react";
+
+export const GRID_SIZE = 20;
 export const NODE_W = 140;
 export const NODE_H = 130;
 export const NODE_PADDING = 20;
@@ -11,3 +14,23 @@ export const typeColors: Record<string, { stroke: string }> = {
   switch: { stroke: ACCENT_COLOR },
   workstation: { stroke: "#E5E7EB" },
 };
+
+export const typeIcons: Record<string, typeof Monitor> = {
+  server: Server,
+  switch: Wifi,
+  workstation: Monitor,
+};
+
+export const typeLabels: Record<string, string> = {
+  server: "Server",
+  switch: "Network Switch",
+  workstation: "Workstation",
+};
+
+export const STORAGE_KEYS = {
+  NODES: "designer-nodes",
+  CONNECTIONS: "designer-connections",
+  NOTES: "designer-notes",
+} as const;
+
+export const EQUIPMENT_MIME_TYPE = "application/equipment";

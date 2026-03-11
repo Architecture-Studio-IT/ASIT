@@ -1,6 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { CanvasNode, NodeType } from "./designer-data";
-import { NODE_W, NODE_H, NODE_PADDING } from "./constants";
+import { NODE_W, NODE_H, NODE_PADDING, GRID_SIZE, STORAGE_KEYS } from "./constants";
+
+function snap(v: number) {
+  return Math.round(v / GRID_SIZE) * GRID_SIZE;
+}
 
 export function resolveOverlap(
   x: number,
@@ -35,20 +39,64 @@ export function resolveOverlap(
     if (!overlapping) break;
   }
 
-  return { x: Math.max(0, nx), y: Math.max(0, ny) };
+  return { x: nx, y: ny };
+}
+
+const STORAGE_KEY = STORAGE_KEYS.NODES;
+
+function getMaxId(nodes: CanvasNode[]): number {
+  return nodes.reduce((max, n) => {
+    const num = parseInt(n.id.replace("node-", ""), 10);
+    return isNaN(num) ? max : Math.max(max, num);
+  }, 0);
 }
 
 let nextId = 0;
 
 export function useCanvasNodes(initial: CanvasNode[]) {
   const [nodes, setNodes] = useState<CanvasNode[]>(() => {
-    nextId = initial.length + 1;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed: CanvasNode[] = JSON.parse(saved);
+        nextId = getMaxId(parsed) + 1;
+        return parsed;
+      }
+    } catch {}
+    nextId = getMaxId(initial) + 1;
     return initial;
   });
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes));
+  }, [nodes]);
+
+  const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
+
+  const selectNode = useCallback((id: string | null, shiftKey?: boolean) => {
+    if (!id) {
+      setSelectedNodes([]);
+      return;
+    }
+    if (shiftKey) {
+      setSelectedNodes((prev) =>
+        prev.includes(id) ? prev.filter((n) => n !== id) : [...prev, id],
+      );
+    } else {
+      setSelectedNodes([id]);
+    }
+  }, []);
+
+  const deleteSelectedNodes = useCallback(() => {
+    setSelectedNodes((sel) => {
+      setNodes((prev) => prev.filter((n) => !sel.includes(n.id)));
+      return [];
+    });
+  }, []);
+
   const commitNodePosition = useCallback((id: string, x: number, y: number) => {
     setNodes((prev) => {
-      const resolved = resolveOverlap(x, y, id, prev);
+      const resolved = resolveOverlap(snap(x), snap(y), id, prev);
       return prev.map((n) => (n.id === id ? { ...n, ...resolved } : n));
     });
   }, []);
@@ -56,10 +104,10 @@ export function useCanvasNodes(initial: CanvasNode[]) {
   const addNode = useCallback((name: string, type: NodeType, x: number, y: number) => {
     const newId = `node-${nextId++}`;
     setNodes((prev) => {
-      const resolved = resolveOverlap(Math.max(0, x), Math.max(0, y), newId, prev);
+      const resolved = resolveOverlap(snap(x), snap(y), newId, prev);
       return [...prev, { id: newId, type, label: name, ...resolved }];
     });
   }, []);
 
-  return { nodes, commitNodePosition, addNode };
+  return { nodes, selectedNodes, selectNode, deleteSelectedNodes, commitNodePosition, addNode };
 }

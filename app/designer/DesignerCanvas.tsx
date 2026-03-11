@@ -1,23 +1,100 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Stage, Layer } from "react-konva";
+import { useState, useCallback, useEffect } from "react";
+import { Stage, Layer, Shape } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type Konva from "konva";
-import { initialNodes, initialConnections, type NodeType } from "./designer-data";
-import { NODE_W, NODE_H } from "./constants";
+import { initialNodes, initialConnections, type NodeType, type CanvasNode, type Connection } from "./designer-data";
+import { NODE_W, NODE_H, GRID_SIZE, EQUIPMENT_MIME_TYPE } from "./constants";
 import { useCanvasNodes } from "./useCanvasNodes";
 import { useConnections } from "./useConnections";
 import { ConnectionGroup, ConnectionPreview } from "./ConnectionLine";
 import NodeShape from "./NodeShape";
 import ZoomControls, { useCanvasViewport } from "./ZoomControls";
 
-export default function DesignerCanvas() {
-  const { nodes, commitNodePosition, addNode } = useCanvasNodes(initialNodes);
+// --- Grid dots background ---
+function CanvasGrid({
+  scale,
+  stagePos,
+  stageSize,
+}: {
+  scale: number;
+  stagePos: { x: number; y: number };
+  stageSize: { width: number; height: number };
+}) {
+  // Adaptive step: ensure dots are ≥15px apart on screen
+  let step = GRID_SIZE;
+  while (step * scale < 15) step *= 2;
+
+  const left = Math.floor(-stagePos.x / scale / step) * step;
+  const top = Math.floor(-stagePos.y / scale / step) * step;
+  const right = left + stageSize.width / scale + step;
+  const bottom = top + stageSize.height / scale + step;
+  const dotRadius = 1.5 / scale;
+
+  return (
+    <Shape
+      sceneFunc={(ctx, shape) => {
+        ctx.beginPath();
+        for (let x = left; x <= right; x += step) {
+          for (let y = top; y <= bottom; y += step) {
+            ctx.moveTo(x + dotRadius, y);
+            ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+          }
+        }
+        ctx.fillStrokeShape(shape);
+      }}
+      fill="#D1D5DB"
+      listening={false}
+      perfectDrawEnabled={false}
+    />
+  );
+}
+
+export default function DesignerCanvas({
+  onSelectionChange,
+  onNodesChange,
+  onConnectionsChange,
+}: {
+  onSelectionChange?: (nodes: CanvasNode[]) => void;
+  onNodesChange?: (nodes: CanvasNode[]) => void;
+  onConnectionsChange?: (connections: Connection[]) => void;
+}) {
+  const { nodes, selectedNodes, selectNode, deleteSelectedNodes, commitNodePosition, addNode } =
+    useCanvasNodes(initialNodes);
+
+  // Report state changes to parent
+  useEffect(() => {
+    onSelectionChange?.(nodes.filter((n) => selectedNodes.includes(n.id)));
+  }, [selectedNodes, nodes, onSelectionChange]);
+
+  useEffect(() => {
+    onNodesChange?.(nodes);
+  }, [nodes, onNodesChange]);
+
   const conn = useConnections(initialConnections);
+
+  useEffect(() => {
+    onConnectionsChange?.(conn.connections);
+  }, [conn.connections, onConnectionsChange]);
+
   const viewport = useCanvasViewport();
 
   const [dragOver, setDragOver] = useState(false);
+
+  // Keyboard: delete selected nodes
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedNodes.length > 0) {
+        const tag = (e.target as HTMLElement).tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        selectedNodes.forEach((id) => conn.removeNodeConnections(id));
+        deleteSelectedNodes();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedNodes, deleteSelectedNodes, conn.removeNodeConnections]);
 
   // Node drag → update connection shapes imperatively
   const handleNodeDragMove = useCallback(
@@ -38,14 +115,15 @@ export default function DesignerCanvas() {
     (e: KonvaEventObject<MouseEvent>) => {
       if (e.target === e.target.getStage()) {
         conn.deselectConnection();
+        selectNode(null);
       }
     },
-    [conn.deselectConnection],
+    [conn.deselectConnection, selectNode],
   );
 
   // Drop from sidebar
   const handleDragOver = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes("application/equipment")) {
+    if (e.dataTransfer.types.includes(EQUIPMENT_MIME_TYPE)) {
       e.preventDefault();
       e.dataTransfer.dropEffect = "copy";
       setDragOver(true);
@@ -58,7 +136,7 @@ export default function DesignerCanvas() {
     e.preventDefault();
     setDragOver(false);
 
-    const raw = e.dataTransfer.getData("application/equipment");
+    const raw = e.dataTransfer.getData(EQUIPMENT_MIME_TYPE);
     if (!raw) return;
 
     const { name, type } = JSON.parse(raw) as { name: string; type: NodeType };
@@ -106,6 +184,8 @@ export default function DesignerCanvas() {
         onClick={handleStageClick}
       >
         <Layer>
+          <CanvasGrid scale={viewport.scale} stagePos={viewport.stagePos} stageSize={viewport.stageSize} />
+
           {conn.connections.map((c) => {
             const from = nodeMap[c.from];
             const to = nodeMap[c.to];
@@ -147,8 +227,10 @@ export default function DesignerCanvas() {
               key={node.id}
               node={node}
               otherNodes={nodes.filter((n) => n.id !== node.id)}
+              selected={selectedNodes.includes(node.id)}
               isConnecting={!!conn.draggingFrom}
               draggingFromId={conn.draggingFrom}
+              onSelect={selectNode}
               onDragMove={handleNodeDragMove}
               onDragEnd={commitNodePosition}
               onOutputMouseDown={conn.startConnectionDrag}
