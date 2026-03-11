@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Wallet, ChevronLeft, ChevronRight, Monitor, MousePointer, ArrowRight, ArrowLeft } from "lucide-react";
 import type { CanvasNode, Connection } from "./designer-data";
 import { defaultProperties } from "./designer-data";
-import { typeIcons, typeLabels, STORAGE_KEYS } from "./constants";
+import { typeIcons, typeLabels, typePrices, STORAGE_KEYS } from "./constants";
 
 interface PropertiesPanelProps {
   activeTab: string;
@@ -12,9 +12,10 @@ interface PropertiesPanelProps {
   selectedNodes: CanvasNode[];
   allNodes: CanvasNode[];
   connections: Connection[];
+  projectId: string;
 }
 
-const tabs = ["Properties", "Connections", "Notes"];
+const tabs = ["Properties", "Connections", "Budget", "Notes"];
 
 export default function PropertiesPanel({
   activeTab,
@@ -24,19 +25,29 @@ export default function PropertiesPanel({
   selectedNodes,
   allNodes,
   connections,
+  projectId,
 }: PropertiesPanelProps) {
   const [selectedStorage, setSelectedStorage] = useState([defaultProperties.storage[0]]);
   const [notes, setNotes] = useState<Record<string, string>>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.NOTES);
+      const saved = localStorage.getItem(STORAGE_KEYS.NOTES(projectId));
       if (saved) return JSON.parse(saved);
     } catch {}
     return {};
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
-  }, [notes]);
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.NOTES(projectId));
+      setNotes(saved ? JSON.parse(saved) : {});
+    } catch {
+      setNotes({});
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.NOTES(projectId), JSON.stringify(notes));
+  }, [notes, projectId]);
 
   const toggleStorage = (s: string) => {
     setSelectedStorage((prev) =>
@@ -238,6 +249,75 @@ export default function PropertiesPanel({
                 );
               })}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Budget */}
+      {activeTab === "Budget" && (
+        <div className="p-5 flex-1 flex flex-col">
+          <h3 className="text-base font-semibold mb-4">Estimated Budget</h3>
+
+          {allNodes.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center">
+              <Wallet size={24} className="text-text-cool mb-2" />
+              <p className="text-sm text-text-cool">Add devices to see the budget estimate.</p>
+            </div>
+          ) : (
+            <>
+              {/* Breakdown by type */}
+              <div className="flex flex-col gap-2 mb-5">
+                {Object.entries(
+                  allNodes.reduce<Record<string, number>>((acc, n) => {
+                    acc[n.type] = (acc[n.type] || 0) + 1;
+                    return acc;
+                  }, {}),
+                ).map(([type, count]) => {
+                  const Icon = typeIcons[type] || Monitor;
+                  const unitPrice = typePrices[type] || 0;
+                  const subtotal = unitPrice * count;
+                  return (
+                    <div key={type} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                      <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                        <Icon size={14} className="text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{typeLabels[type] || type}</p>
+                        <p className="text-xs text-text-cool">
+                          {count} x ${unitPrice.toLocaleString()}
+                        </p>
+                      </div>
+                      <span className="text-sm font-semibold">${subtotal.toLocaleString()}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Connections cost */}
+              <div className="flex items-center justify-between text-sm py-2 border-t border-border">
+                <span className="text-text-cool">Cabling ({connections.length} links)</span>
+                <span className="font-medium">${(connections.length * 150).toLocaleString()}</span>
+              </div>
+
+              {/* Total */}
+              <div className="mt-auto p-4 bg-primary rounded-xl text-white">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium opacity-90">Total Estimate</span>
+                  <Wallet size={16} className="opacity-70" />
+                </div>
+                <p className="text-2xl font-bold">
+                  $
+                  {(
+                    allNodes.reduce((sum, n) => sum + (typePrices[n.type] || 0), 0) +
+                    connections.length * 150
+                  ).toLocaleString()}
+                  .00
+                </p>
+                <p className="text-xs text-accent mt-1">
+                  {allNodes.length} device{allNodes.length !== 1 ? "s" : ""} &bull; {connections.length} connection{connections.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </>
           )}
         </div>
       )}

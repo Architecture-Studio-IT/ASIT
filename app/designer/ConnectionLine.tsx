@@ -62,7 +62,6 @@ export function WaypointHandle({
   wpIndex,
   selected,
   onDrag,
-  onDragEnd,
   onRemove,
 }: {
   wp: Waypoint;
@@ -70,7 +69,6 @@ export function WaypointHandle({
   wpIndex: number;
   selected: boolean;
   onDrag: (connKey: string, wpIndex: number, x: number, y: number) => void;
-  onDragEnd: () => void;
   onRemove: (connKey: string, wpIndex: number) => void;
 }) {
   const [hovered, setHovered] = useState(false);
@@ -100,7 +98,6 @@ export function WaypointHandle({
       }}
       onDragEnd={(e: KonvaEventObject<DragEvent>) => {
         e.cancelBubble = true;
-        onDragEnd();
       }}
       onDblClick={(e: KonvaEventObject<MouseEvent>) => {
         e.cancelBubble = true;
@@ -242,7 +239,6 @@ export function ConnectionGroup({
   onConnectionDblClick,
   onConnectionContextMenu,
   onWaypointDrag,
-  onWaypointDragEnd,
   onWaypointRemove,
 }: {
   connKey: string;
@@ -257,7 +253,6 @@ export function ConnectionGroup({
   onConnectionDblClick: (key: string, x: number, y: number, segmentIndex: number) => void;
   onConnectionContextMenu: (key: string, e: KonvaEventObject<PointerEvent>) => void;
   onWaypointDrag: (connKey: string, wpIndex: number, x: number, y: number) => void;
-  onWaypointDragEnd: () => void;
   onWaypointRemove: (connKey: string, wpIndex: number) => void;
 }) {
   return (
@@ -283,7 +278,6 @@ export function ConnectionGroup({
           wpIndex={i}
           selected={selected}
           onDrag={onWaypointDrag}
-          onDragEnd={onWaypointDragEnd}
           onRemove={onWaypointRemove}
         />
       ))}

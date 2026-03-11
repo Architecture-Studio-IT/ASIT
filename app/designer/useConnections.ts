@@ -9,20 +9,20 @@ function parseConnKey(key: string): [string, string] {
   return [from, to];
 }
 
-const STORAGE_KEY = STORAGE_KEYS.CONNECTIONS;
+export function useConnections(initial: Connection[], projectId: string) {
+  const storageKey = STORAGE_KEYS.CONNECTIONS(projectId);
 
-export function useConnections(initial: Connection[]) {
   const [connections, setConnections] = useState<Connection[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(storageKey);
       if (saved) return JSON.parse(saved);
     } catch {}
     return initial;
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(connections));
-  }, [connections]);
+    localStorage.setItem(storageKey, JSON.stringify(connections));
+  }, [connections, storageKey]);
 
   const [draggingFrom, setDraggingFrom] = useState<string | null>(null);
   const [dragTarget, setDragTarget] = useState<{ x: number; y: number } | null>(null);
@@ -171,8 +171,6 @@ export function useConnections(initial: Connection[]) {
     [],
   );
 
-  const onWaypointDragEnd = useCallback(() => {}, []);
-
   const removeWaypoint = useCallback(
     (connKey: string, wpIndex: number) => {
       const [from, to] = parseConnKey(connKey);
@@ -208,7 +206,6 @@ export function useConnections(initial: Connection[]) {
     updateConnectionShapes,
     addWaypoint,
     moveWaypoint,
-    onWaypointDragEnd,
     removeWaypoint,
     removeNodeConnections,
   };
