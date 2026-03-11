@@ -20,6 +20,12 @@
       "password_hash": "+vVyrFRYYYkbMX54TuReuKKGDSrajTaug3NFkK3pc8NF0t01",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
       "tags": ""
+    },
+    {
+      "name": "db",
+      "password_hash": "rqA4thcc8v7zJ2oacIeQvr/zykRsleColbxy3XTygAPGgYkj",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ""
     }
   ],
   "permissions": [
@@ -43,6 +49,13 @@
       "configure": "products|q\\.db|q\\.es",
       "write": "amq\\.default|q\\.db|q\\.es",
       "read": "products"
+    },
+    {
+      "user": "db",
+      "vhost": "/",
+      "configure": "q\\.db",
+      "write": "",
+      "read": "q\\.db"
     }
   ],
   "queues": [
