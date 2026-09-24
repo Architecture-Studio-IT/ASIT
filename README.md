@@ -20,32 +20,62 @@ ASIT is built around three core pillars:
 
 The platform is designed to be accessible, sovereign, and compliant with European regulations, while remaining powerful enough for professional use cases.
 
+## Démarrage rapide
+
+```bash
+npm install
+npm run setup          # crée .env depuis .env.exemple et génère AUTH_SECRET
+# renseigner POSTGRES_* / DATABASE_URL / RABBITMQ_* dans .env
+docker compose up --build
+```
+
+`npm run setup` n'écrase jamais un `.env` existant. Sans identifiants Google, la connexion par email et mot
+de passe fonctionne ; le bouton Google indique simplement qu'il n'est pas configuré. Si `AUTH_SECRET` manque,
+les pages de connexion et d'inscription l'annoncent au lieu de renvoyer une erreur serveur.
+
 ## Environment configuration
 
-The project relies on a dotenv file to store sensitive credentials. An example template is provided in `.env.exemple`.
+The project relies on a dotenv file. A template is provided in `.env.exemple` — copy it to `.env` and fill it in,
+ou laissez `npm run setup` le faire.
 
-### Getting started
+| Variable | Rôle |
+| --- | --- |
+| `POSTGRES_*`, `DATABASE_URL` | Base de données. En local (Prisma CLI), le port exposé est `5434`. |
+| `RABBITMQ_*` | Comptes du bus de messages (voir `rabbitmq/definitions.json`). |
+| `AUTH_SECRET` | Clé de signature des sessions (JWT HS256, cookie httpOnly). 32 caractères minimum : `openssl rand -hex 32`. |
+| `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Client OAuth 2.0 « Application Web » créé sur console.cloud.google.com. Même valeur dans les deux : la première sert à vérifier le jeton côté serveur, la seconde au bouton Google côté navigateur. Ajouter `http://localhost:3000` (et le domaine public) aux origines JavaScript autorisées. **Facultatif** : sans elles, seule la connexion par mot de passe est proposée. |
+| `APP_URL` | URL publique, utilisée par `robots.txt`. |
+| `ICECAT_*` | Import du catalogue depuis Open Icecat (voir le dépôt `ASIT-web-scrapper`). |
 
-1. Copy the example file to `.env`:
-   ```bash
-   cp .env.exemple .env  # or copy manually
-   ```
-2. Fill in the values with your preferred credentials:
+> `DATABASE_URL` est injectée automatiquement dans les conteneurs par docker-compose.
+> `NEXT_PUBLIC_GOOGLE_CLIENT_ID` est inlinée au **build** de l'image : elle est passée en `build.args`. La changer
+> impose donc de reconstruire (`docker compose up --build app`), un redémarrage ne suffit pas.
 
-   ```dotenv
-   POSTGRES_USER=
-   POSTGRES_PASSWORD=
-   POSTGRES_DB=
+### Connexion Google sur une autre machine
 
-   PGADMIN_DEFAULT_EMAIL=
-   PGADMIN_DEFAULT_PASSWORD=
+Le client OAuth est rattaché à un projet Google Cloud et à une liste d'origines autorisées. Un coéquipier qui
+travaille sur `http://localhost:3000` peut réutiliser le même `GOOGLE_CLIENT_ID` (cette origine est déclarée).
+Toute autre origine — autre port, autre domaine — doit être ajoutée aux « origines JavaScript autorisées » du
+client, ou faire l'objet d'un client OAuth distinct.
 
-   # For Prisma CLI (local, outside Docker)
-   DATABASE_URL=postgresql://user:password@localhost:5432/dbname
-   ```
+### Schéma
 
-> `DATABASE_URL` is automatically injected into the app container by docker-compose.
-> You only need to set it manually in `.env` when running Prisma CLI commands locally (e.g. `npx prisma migrate`).
+Le schéma est appliqué avec `prisma db push` (service `migrate` du compose, ou `npm run prisma:dbpush` en local).
+
+## Authentification et comptes
+
+- Inscription et connexion par email + mot de passe (bcrypt, 12 tours) ou par compte Google
+  (Google Identity Services côté client, `google-auth-library` côté serveur pour vérifier le jeton).
+- L'acceptation des conditions d'utilisation est enregistrée sur le compte (`tosAcceptedAt`, `tosVersion`).
+  La version courante est `CGU_VERSION` dans `lib/legal.ts` ; la changer force une ré-acceptation.
+- Depuis `/profile` : export JSON de toutes les données du compte (`/api/account/export`) et suppression définitive.
+- Les espaces `/dashboard`, `/designer`, `/marketplace`, `/profile` exigent une session (`middleware.ts`).
+
+## Pages légales
+
+`/cgu` regroupe mentions légales, conditions d'utilisation et information RGPD. Les coordonnées de l'éditeur
+sont dans `lib/legal.ts` (`OPERATOR`) — **à compléter avant toute mise en ligne**. `/robots.txt` est généré par
+`app/robots.ts` et exclut les crawlers d'entraînement IA (obligation de la Fair Use Policy Icecat, et opposition TDM).
 
 ## Dockerization 🐳
 

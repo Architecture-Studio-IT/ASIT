@@ -1,28 +1,20 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type Konva from "konva";
-import type { Connection, Waypoint } from "./designer-data";
-import { NODE_W, NODE_H, STORAGE_KEYS } from "./constants";
+import type { Connection } from "./designer-data";
+import { NODE_W, NODE_H } from "./constants";
 
 function parseConnKey(key: string): [string, string] {
   const [from, to] = key.split("->>");
   return [from, to];
 }
 
-export function useConnections(initial: Connection[], projectId: string) {
-  const storageKey = STORAGE_KEYS.CONNECTIONS(projectId);
-
-  const [connections, setConnections] = useState<Connection[]>(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return initial;
-  });
-
-  useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(connections));
-  }, [connections, storageKey]);
+/**
+ * État des liaisons d'un projet. L'état initial vient de la base ; la
+ * persistance est assurée par le parent, qui observe `connections`.
+ */
+export function useConnections(initial: Connection[]) {
+  const [connections, setConnections] = useState<Connection[]>(initial);
 
   const [draggingFrom, setDraggingFrom] = useState<string | null>(null);
   const [dragTarget, setDragTarget] = useState<{ x: number; y: number } | null>(null);

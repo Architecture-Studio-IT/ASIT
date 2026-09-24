@@ -3,7 +3,7 @@ import { Rect, Text, Line, Group, Circle } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type Konva from "konva";
 import type { CanvasNode } from "./designer-data";
-import { NODE_W, NODE_H, PORT_RADIUS, ACCENT_COLOR, SELECTED_COLOR, typeColors } from "./constants";
+import { NODE_W, NODE_H, PORT_RADIUS, ACCENT_COLOR, SELECTED_COLOR, typeColors, DEFAULT_TYPE_COLOR } from "./constants";
 
 // --- Port: circular connection point ---
 function Port({
@@ -125,7 +125,7 @@ export default function NodeShape({
   onOutputMouseDown: (nodeId: string) => void;
   onInputMouseUp: (nodeId: string) => void;
 }) {
-  const colors = typeColors[node.type];
+  const colors = typeColors[node.type] ?? DEFAULT_TYPE_COLOR;
   const compatibleTarget = isConnecting && draggingFromId !== node.id;
 
   return (
@@ -159,16 +159,21 @@ export default function NodeShape({
         perfectDrawEnabled={false}
       />
       <DeviceIcon type={node.type} x={0} y={0} />
+      {/* Libellé sur deux lignes maximum, coupé avec une ellipse : il ne sort jamais de la boîte. */}
       <Text
         text={node.label}
-        x={0}
-        y={NODE_H - 40}
-        width={NODE_W}
+        x={8}
+        y={NODE_H - 44}
+        width={NODE_W - 16}
+        height={34}
         align="center"
-        fontSize={13}
+        verticalAlign="top"
+        fontSize={12}
         fontFamily="sans-serif"
         fill="#1a1a2e"
-        lineHeight={1.3}
+        lineHeight={1.25}
+        wrap="word"
+        ellipsis
         listening={false}
       />
       <Port
