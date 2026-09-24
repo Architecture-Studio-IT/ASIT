@@ -9,7 +9,51 @@ import {
   ExternalLink,
 } from "lucide-react";
 import type { ProductData } from "../actions/products";
-import { typeIcons, typeLabels } from "../designer/constants";
+import { typeIcons, typeLabels, DEFAULT_TYPE_ICON } from "../designer/constants";
+import { priceSearchLinks } from "@/lib/vendor-links";
+
+const euro = (n: number) => `${n.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} €`;
+
+/** Prix : la meilleure offre constatée si elle existe ; sinon un lien vers le constructeur, jamais une estimation. */
+function PriceTag({ p, compact = false }: { p: ProductData; compact?: boolean }) {
+  if (p.best_offer) {
+    return (
+      <div className={compact ? "text-right" : ""}>
+        <p className="text-base font-semibold">{euro(p.best_offer.price_cents / 100)} <span className="text-xs font-normal text-text-cool">HT</span></p>
+        <p className="text-xs text-text-cool">
+          {p.best_offer.url ? (
+            <a href={p.best_offer.url} target="_blank" rel="noopener noreferrer sponsored" className="hover:text-primary underline-offset-2 hover:underline">
+              chez {p.best_offer.merchant}
+            </a>
+          ) : (
+            <>chez {p.best_offer.merchant}</>
+          )}
+          {p.offer_count > 1 && ` · ${p.offer_count} offres`}
+        </p>
+      </div>
+    );
+  }
+  const links = priceSearchLinks(p.manufacturer, p.model, p.sku, p.gtin);
+  return (
+    <div className={compact ? "text-right" : ""}>
+      <p className="text-xs text-text-cool mb-1">Comparer les prix</p>
+      <div className={`flex flex-wrap gap-x-3 gap-y-1 ${compact ? "justify-end" : ""}`}>
+        {links.map((link) => (
+          <a
+            key={link.label}
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-2 hover:underline"
+          >
+            <ExternalLink size={12} aria-hidden="true" />
+            {link.label}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function getSpecs(p: ProductData): string {
   if (p.server) {
@@ -38,11 +82,15 @@ function getSpecs(p: ProductData): string {
     const parts: string[] = [];
     if (p.accessPoint.wifi_standard) parts.push(p.accessPoint.wifi_standard);
     if (p.accessPoint.max_throughput_mbps) parts.push(`${p.accessPoint.max_throughput_mbps} Mbps`);
-    if (p.accessPoint.outdoor) parts.push("Outdoor");
+    if (p.accessPoint.outdoor) parts.push("Extérieur");
     return parts.join(" | ") || p.sku;
   }
-  return p.sku;
+  // Types sans table dédiée : les premières caractéristiques du catalogue.
+  return p.highlights.slice(0, 3).join(" | ") || p.sku;
 }
+
+/** Tri par prix : les produits sans prix connu passent en dernier. */
+const priceOf = (p: ProductData) => p.best_offer?.price_cents ?? Number.MAX_SAFE_INTEGER;
 
 function getTags(p: ProductData): string[] {
   const tags: string[] = [];
@@ -59,9 +107,10 @@ function getTags(p: ProductData): string[] {
 }
 
 const sortOptions = [
-  { value: "name", label: "Name" },
-  { value: "manufacturer", label: "Manufacturer" },
+  { value: "name", label: "Nom" },
+  { value: "manufacturer", label: "Constructeur" },
   { value: "type", label: "Type" },
+  { value: "price", label: "Prix croissant" },
 ];
 
 interface MarketplaceClientProps {
@@ -89,7 +138,7 @@ export default function MarketplaceClient({ products, manufacturers, productType
   };
 
   const filtered = useMemo(() => {
-    let list = products.filter((p) => {
+    const list = products.filter((p) => {
       if (search) {
         const q = search.toLowerCase();
         if (!p.name.toLowerCase().includes(q) && !p.manufacturer.toLowerCase().includes(q) && !p.sku.toLowerCase().includes(q))
@@ -103,6 +152,7 @@ export default function MarketplaceClient({ products, manufacturers, productType
     if (sortBy === "name") list.sort((a, b) => a.name.localeCompare(b.name));
     else if (sortBy === "manufacturer") list.sort((a, b) => a.manufacturer.localeCompare(b.manufacturer));
     else if (sortBy === "type") list.sort((a, b) => a.product_type.localeCompare(b.product_type));
+    else if (sortBy === "price") list.sort((a, b) => priceOf(a) - priceOf(b));
 
     return list;
   }, [products, search, selectedBrands, selectedTypes, sortBy]);
@@ -111,15 +161,15 @@ export default function MarketplaceClient({ products, manufacturers, productType
     <div className="flex flex-col h-full">
       {/* Breadcrumb */}
       <div className="px-6 py-2 text-sm text-text-cool border-b border-border bg-white flex items-center gap-1.5">
-        <span>Home</span>
-        <ChevronRight size={12} />
-        <span className="text-foreground font-medium">Marketplace</span>
+        <span>Accueil</span>
+        <ChevronRight size={12} aria-hidden="true" />
+        <h1 className="text-foreground font-medium">Catalogue</h1>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar filters */}
         <aside className="w-56 shrink-0 border-r border-border bg-white p-5 overflow-y-auto">
-          <h2 className="text-base font-semibold mb-5">Filters</h2>
+          <h2 className="text-base font-semibold mb-5">Filtres</h2>
 
           {/* Search */}
           <div className="mb-5">
@@ -127,7 +177,8 @@ export default function MarketplaceClient({ products, manufacturers, productType
               <Search size={14} className="text-text-cool shrink-0" />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Rechercher…"
+                aria-label="Rechercher un produit"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="bg-transparent outline-none w-full text-sm"
@@ -137,7 +188,7 @@ export default function MarketplaceClient({ products, manufacturers, productType
 
           {/* Manufacturer */}
           <div className="mb-5">
-            <h3 className="text-sm font-semibold mb-2.5">Manufacturer</h3>
+            <h3 className="text-sm font-semibold mb-2.5">Constructeur</h3>
             <div className="flex flex-col gap-2">
               {manufacturers.map((b) => (
                 <label key={b} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -175,7 +226,7 @@ export default function MarketplaceClient({ products, manufacturers, productType
             onClick={resetFilters}
             className="w-full py-2.5 text-sm border border-border rounded-lg hover:bg-surface transition-colors"
           >
-            Reset Filters
+            Réinitialiser les filtres
           </button>
         </aside>
 
@@ -184,12 +235,13 @@ export default function MarketplaceClient({ products, manufacturers, productType
           {/* Toolbar */}
           <div className="flex items-center justify-between px-6 py-3 border-b border-border bg-white">
             <span className="text-sm text-text-cool">
-              {filtered.length} product{filtered.length !== 1 ? "s" : ""}
+              {filtered.length} produit{filtered.length !== 1 ? "s" : ""}
             </span>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-text-cool">Sort by:</span>
+                <label htmlFor="sort" className="text-text-cool">Trier par :</label>
                 <select
+                  id="sort"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className="border border-border rounded-lg px-3 py-1.5 text-sm bg-white"
@@ -204,15 +256,19 @@ export default function MarketplaceClient({ products, manufacturers, productType
               <div className="flex border border-border rounded-lg overflow-hidden">
                 <button
                   onClick={() => setViewMode("list")}
+                  aria-label="Affichage en liste"
+                  aria-pressed={viewMode === "list"}
                   className={`p-2 transition-colors ${viewMode === "list" ? "bg-primary/10 text-primary" : "text-text-cool hover:bg-surface"}`}
                 >
-                  <List size={16} />
+                  <List size={16} aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => setViewMode("grid")}
+                  aria-label="Affichage en grille"
+                  aria-pressed={viewMode === "grid"}
                   className={`p-2 transition-colors ${viewMode === "grid" ? "bg-primary/10 text-primary" : "text-text-cool hover:bg-surface"}`}
                 >
-                  <LayoutGrid size={16} />
+                  <LayoutGrid size={16} aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -223,27 +279,32 @@ export default function MarketplaceClient({ products, manufacturers, productType
             {filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <Search size={40} className="text-text-cool mb-3" />
-                <p className="text-sm font-medium text-text-cool">No products found</p>
-                <p className="text-xs text-text-cool mt-1">Try adjusting your filters</p>
+                <p className="text-sm font-medium text-text-cool">Aucun produit trouvé</p>
+                <p className="text-xs text-text-cool mt-1">Modifiez vos filtres</p>
               </div>
             ) : viewMode === "list" ? (
               <div className="flex flex-col gap-4">
                 {filtered.map((p) => {
-                  const Icon = typeIcons[p.product_type] ?? typeIcons.server;
+                  const Icon = typeIcons[p.product_type] ?? DEFAULT_TYPE_ICON;
                   return (
                     <div
                       key={p.id}
                       className="flex items-center gap-5 p-5 rounded-xl border border-border bg-white hover:border-primary/30 transition-colors"
                     >
-                      <div className="w-16 h-16 rounded-lg bg-surface flex items-center justify-center shrink-0">
-                        <Icon size={28} className="text-text-cool" />
+                      <div className="w-16 h-16 rounded-lg bg-surface flex items-center justify-center shrink-0 overflow-hidden">
+                        {p.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.image_url} alt="" className="h-full w-full object-contain" loading="lazy" />
+                        ) : (
+                          <Icon size={28} className="text-text-cool" aria-hidden="true" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <h3 className="text-base font-semibold">{p.name}</h3>
                           {p.scraped_url && (
-                            <a href={p.scraped_url} target="_blank" rel="noopener noreferrer" className="text-text-cool hover:text-primary">
-                              <ExternalLink size={14} />
+                            <a href={p.scraped_url} target="_blank" rel="noopener noreferrer" className="text-text-cool hover:text-primary" aria-label={`Fiche source de ${p.name}`}>
+                              <ExternalLink size={14} aria-hidden="true" />
                             </a>
                           )}
                         </div>
@@ -263,6 +324,9 @@ export default function MarketplaceClient({ products, manufacturers, productType
                           ))}
                         </div>
                       </div>
+                      <div className="shrink-0 pl-4 border-l border-border">
+                        <PriceTag p={p} compact />
+                      </div>
                     </div>
                   );
                 })}
@@ -270,14 +334,19 @@ export default function MarketplaceClient({ products, manufacturers, productType
             ) : (
               <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
                 {filtered.map((p) => {
-                  const Icon = typeIcons[p.product_type] ?? typeIcons.server;
+                  const Icon = typeIcons[p.product_type] ?? DEFAULT_TYPE_ICON;
                   return (
                     <div
                       key={p.id}
                       className="flex flex-col p-5 rounded-xl border border-border bg-white hover:border-primary/30 transition-colors"
                     >
-                      <div className="w-14 h-14 rounded-lg bg-surface flex items-center justify-center mb-3">
-                        <Icon size={24} className="text-text-cool" />
+                      <div className="w-14 h-14 rounded-lg bg-surface flex items-center justify-center mb-3 overflow-hidden">
+                        {p.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.image_url} alt="" className="h-full w-full object-contain" loading="lazy" />
+                        ) : (
+                          <Icon size={24} className="text-text-cool" aria-hidden="true" />
+                        )}
                       </div>
                       <h3 className="text-sm font-semibold">{p.name}</h3>
                       <p className="text-xs text-text-cool mt-1 line-clamp-1">{getSpecs(p)}</p>
@@ -287,13 +356,16 @@ export default function MarketplaceClient({ products, manufacturers, productType
                         </span>
                         <span className="text-xs text-text-cool">{p.manufacturer}</span>
                       </div>
-                      <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
+                      <div className="mt-3">
+                        <PriceTag p={p} />
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
                         {getTags(p).slice(0, 2).map((tag) => (
                           <span key={tag} className="text-xs text-text-cool">{tag}</span>
                         ))}
                         {p.scraped_url && (
-                          <a href={p.scraped_url} target="_blank" rel="noopener noreferrer" className="text-text-cool hover:text-primary">
-                            <ExternalLink size={12} />
+                          <a href={p.scraped_url} target="_blank" rel="noopener noreferrer" className="text-text-cool hover:text-primary" aria-label={`Fiche source de ${p.name}`}>
+                            <ExternalLink size={12} aria-hidden="true" />
                           </a>
                         )}
                       </div>

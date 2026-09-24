@@ -1,4 +1,18 @@
-import { Monitor, Server, Wifi, HardDrive, Radio } from "lucide-react";
+import {
+  Monitor,
+  Server,
+  Wifi,
+  HardDrive,
+  Radio,
+  Laptop,
+  Keyboard,
+  Mouse,
+  Printer,
+  BatteryCharging,
+  Database,
+  Archive,
+  Box,
+} from "lucide-react";
 
 export const GRID_SIZE = 20;
 export const NODE_W = 140;
@@ -14,8 +28,17 @@ export const typeColors: Record<string, { stroke: string }> = {
   switch: { stroke: ACCENT_COLOR },
   router: { stroke: "#F59E0B" },
   access_point: { stroke: "#8B5CF6" },
-  workstation: { stroke: "#E5E7EB" },
+  workstation: { stroke: "#94A3B8" },
+  laptop: { stroke: "#94A3B8" },
+  monitor: { stroke: "#64748B" },
+  keyboard: { stroke: "#A3A3A3" },
+  mouse: { stroke: "#A3A3A3" },
+  printer: { stroke: "#78716C" },
+  ups: { stroke: "#EAB308" },
+  nas: { stroke: "#22C55E" },
+  rack: { stroke: "#475569" },
 };
+export const DEFAULT_TYPE_COLOR = { stroke: "#CBD5E1" };
 
 export const typeIcons: Record<string, typeof Monitor> = {
   server: Server,
@@ -23,30 +46,52 @@ export const typeIcons: Record<string, typeof Monitor> = {
   router: HardDrive,
   access_point: Radio,
   workstation: Monitor,
+  laptop: Laptop,
+  monitor: Monitor,
+  keyboard: Keyboard,
+  mouse: Mouse,
+  printer: Printer,
+  ups: BatteryCharging,
+  nas: Database,
+  rack: Archive,
 };
+export const DEFAULT_TYPE_ICON = Box;
 
 export const typeLabels: Record<string, string> = {
-  server: "Server",
-  switch: "Network Switch",
-  router: "Router",
-  access_point: "Access Point",
-  workstation: "Workstation",
+  server: "Serveur",
+  switch: "Switch réseau",
+  router: "Routeur",
+  access_point: "Point d'accès",
+  workstation: "Poste de travail",
+  laptop: "Ordinateur portable",
+  monitor: "Écran",
+  keyboard: "Clavier",
+  mouse: "Souris",
+  printer: "Imprimante",
+  ups: "Onduleur",
+  nas: "NAS",
+  rack: "Baie rack",
 };
 
-export const typePrices: Record<string, number> = {
-  server: 4500,
-  switch: 1200,
-  router: 800,
-  access_point: 350,
-  workstation: 2450,
+/** Libellé au pluriel pour les catégories de la sidebar. */
+export const typeLabelsPlural: Record<string, string> = {
+  server: "Serveurs",
+  switch: "Switches",
+  router: "Routeurs",
+  access_point: "Points d'accès",
+  workstation: "Postes de travail",
+  laptop: "Ordinateurs portables",
+  monitor: "Écrans",
+  keyboard: "Claviers",
+  mouse: "Souris",
+  printer: "Imprimantes",
+  ups: "Onduleurs",
+  nas: "NAS",
+  rack: "Baies rack",
 };
 
-export const STORAGE_KEYS = {
-  PROJECTS: "designer-projects",
-  ACTIVE_PROJECT: "designer-active-project",
-  NODES: (projectId: string) => `designer-nodes-${projectId}`,
-  CONNECTIONS: (projectId: string) => `designer-connections-${projectId}`,
-  NOTES: (projectId: string) => `designer-notes-${projectId}`,
-} as const;
+
+/** Délai avant enregistrement d'un projet modifié, en millisecondes. */
+export const SAVE_DEBOUNCE_MS = 800;
 
 export const EQUIPMENT_MIME_TYPE = "application/equipment";

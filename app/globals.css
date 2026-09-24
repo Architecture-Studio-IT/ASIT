@@ -24,3 +24,10 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Focus clavier visible partout (RGAA 10.7). Les composants qui définissent
+   leur propre anneau via focus-visible:ring-* prennent le dessus. */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

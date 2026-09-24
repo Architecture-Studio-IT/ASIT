@@ -4,8 +4,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Stage, Layer, Shape } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type Konva from "konva";
-import { initialNodes, initialConnections, type NodeType, type CanvasNode, type Connection } from "./designer-data";
-import type { Waypoint } from "./designer-data";
+import type { NodeType, CanvasNode, Connection, Waypoint } from "./designer-data";
 import { NODE_W, NODE_H, GRID_SIZE, EQUIPMENT_MIME_TYPE } from "./constants";
 import { useCanvasNodes } from "./useCanvasNodes";
 import { useConnections } from "./useConnections";
@@ -97,19 +96,33 @@ function CanvasGrid({
   );
 }
 
+export interface CanvasApi {
+  updateNode: (id: string, patch: Partial<Omit<CanvasNode, "id">>) => void;
+}
+
 export default function DesignerCanvas({
-  projectId,
+  initialNodes,
+  initialConnections,
   onSelectionChange,
   onNodesChange,
   onConnectionsChange,
+  onReady,
 }: {
-  projectId: string;
+  /** Contenu du projet chargé depuis la base. Le composant est remonté à chaque changement de projet. */
+  initialNodes: CanvasNode[];
+  initialConnections: Connection[];
   onSelectionChange?: (nodes: CanvasNode[]) => void;
   onNodesChange?: (nodes: CanvasNode[]) => void;
   onConnectionsChange?: (connections: Connection[]) => void;
+  /** Donne au parent la main sur les nœuds (édition depuis l'inspecteur). */
+  onReady?: (api: CanvasApi) => void;
 }) {
-  const { nodes, selectedNodes, selectNode, deleteSelectedNodes, commitNodePosition, addNode } =
-    useCanvasNodes(initialNodes, projectId);
+  const { nodes, selectedNodes, selectNode, deleteSelectedNodes, commitNodePosition, addNode, updateNode } =
+    useCanvasNodes(initialNodes);
+
+  useEffect(() => {
+    onReady?.({ updateNode });
+  }, [onReady, updateNode]);
 
   // Report state changes to parent
   useEffect(() => {
@@ -120,7 +133,7 @@ export default function DesignerCanvas({
     onNodesChange?.(nodes);
   }, [nodes, onNodesChange]);
 
-  const conn = useConnections(initialConnections, projectId);
+  const conn = useConnections(initialConnections);
 
   useEffect(() => {
     onConnectionsChange?.(conn.connections);
@@ -187,13 +200,13 @@ export default function DesignerCanvas({
     const raw = e.dataTransfer.getData(EQUIPMENT_MIME_TYPE);
     if (!raw) return;
 
-    const { name, type } = JSON.parse(raw) as { name: string; type: NodeType };
+    const { name, type, productId } = JSON.parse(raw) as { name: string; type: NodeType; productId?: number };
     const containerRect = viewport.containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
 
     const x = (e.clientX - containerRect.left - viewport.stagePos.x) / viewport.scale - NODE_W / 2;
     const y = (e.clientY - containerRect.top - viewport.stagePos.y) / viewport.scale - NODE_H / 2;
-    addNode(name, type, x, y);
+    addNode(name, type, x, y, productId);
   };
 
   const nodeMap = useMemo(() => Object.fromEntries(nodes.map((n) => [n.id, n])), [nodes]);
@@ -296,10 +309,11 @@ export default function DesignerCanvas({
       {dragOver && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
           <div className="px-6 py-3 bg-primary/10 border-2 border-dashed border-primary rounded-xl text-primary font-medium">
-            Drop to add equipment
+            Déposer pour ajouter l&apos;équipement
           </div>
         </div>
       )}
+
 
       <Stage
         ref={viewport.stageRef}

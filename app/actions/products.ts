@@ -1,15 +1,37 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+
+export interface ProductOffer {
+  merchant: string;
+  price_cents: number;
+  currency: string;
+  url: string | null;
+  fetched_at: string;
+}
 
 export interface ProductData {
   id: number;
   name: string;
+  /** Constructeur + modèle : le libellé court, pour les nœuds du designer. */
+  short_name: string;
+  model: string | null;
   sku: string;
   product_type: string;
   manufacturer: string;
   warranty: string | null;
   scraped_url: string | null;
+  image_url: string | null;
+  gtin: string | null;
+  source: string;
+  /** Meilleure offre connue (prix le plus bas), ou null si aucun prix n'est connu. */
+  best_offer: ProductOffer | null;
+  offer_count: number;
+  /** Premières caractéristiques brutes, pour les types sans table dédiée. */
+  highlights: string[];
+  /** Fiche technique PDF (Icecat, Open Content License). */
+  datasheet_url: string | null;
   server?: {
     cpu_model: string | null;
     cpu_cores: number | null;
@@ -54,26 +76,63 @@ export interface ProductData {
   };
 }
 
+const productInclude = {
+  manufacturer: true,
+  productServer: true,
+  productSwitch: true,
+  productRouter: true,
+  productAccessPoint: true,
+  offers: { orderBy: { price_cents: "asc" }, take: 1 },
+  _count: { select: { offers: true } },
+} as const satisfies Prisma.ProductInclude;
+
+type RawSpec = { id?: string; name?: string; value?: string; unit?: string };
+
+/** Quatre premières caractéristiques nommées, telles que reçues du catalogue. */
+function highlightsOf(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return (raw as RawSpec[])
+    .filter((f) => f?.name && f?.value)
+    .slice(0, 4)
+    .map((f) => `${f.name} : ${f.value}${f.unit && !f.value!.includes(f.unit) ? ` ${f.unit}` : ""}`);
+}
+
+type ProductRow = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
+
 export async function getProducts(): Promise<ProductData[]> {
   const products = await prisma.product.findMany({
-    include: {
-      manufacturer: true,
-      productServer: true,
-      productSwitch: true,
-      productRouter: true,
-      productAccessPoint: true,
-    },
+    include: productInclude,
     orderBy: { name: "asc" },
   });
+  return products.map(toProductData);
+}
 
-  return products.map((p) => ({
+export async function getProductById(id: number): Promise<ProductData | null> {
+  const p = await prisma.product.findUnique({ where: { id }, include: productInclude });
+  return p ? toProductData(p) : null;
+}
+
+function toProductData(p: ProductRow): ProductData {
+  const best = p.offers[0];
+  return {
     id: p.id,
     name: p.name,
+    short_name: `${p.manufacturer.name} ${p.model ?? p.sku}`.trim(),
+    model: p.model,
     sku: p.sku,
     product_type: p.product_type,
     manufacturer: p.manufacturer.name,
     warranty: p.warranty,
     scraped_url: p.scraped_url,
+    image_url: p.image_url,
+    gtin: p.gtin,
+    source: p.source,
+    best_offer: best
+      ? { merchant: best.merchant, price_cents: best.price_cents, currency: best.currency, url: best.url, fetched_at: best.fetched_at.toISOString() }
+      : null,
+    offer_count: p._count.offers,
+    highlights: highlightsOf(p.raw_specs),
+    datasheet_url: p.datasheet_url,
     ...(p.productServer && {
       server: {
         cpu_model: p.productServer.cpu_model,
@@ -124,7 +183,7 @@ export async function getProducts(): Promise<ProductData[]> {
         power_watts: p.productAccessPoint.power_watts,
       },
     }),
-  }));
+  };
 }
 
 export async function getManufacturers(): Promise<string[]> {

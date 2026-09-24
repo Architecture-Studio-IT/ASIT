@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import type { CanvasNode, NodeType } from "./designer-data";
-import { NODE_W, NODE_H, NODE_PADDING, GRID_SIZE, STORAGE_KEYS } from "./constants";
+import { NODE_W, NODE_H, NODE_PADDING, GRID_SIZE } from "./constants";
 
 function snap(v: number) {
   return Math.round(v / GRID_SIZE) * GRID_SIZE;
@@ -49,28 +49,13 @@ function getMaxId(nodes: CanvasNode[]): number {
   }, 0);
 }
 
-let nextId = 0;
-
-export function useCanvasNodes(initial: CanvasNode[], projectId: string) {
-  const storageKey = STORAGE_KEYS.NODES(projectId);
-
-  const [nodes, setNodes] = useState<CanvasNode[]>(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed: CanvasNode[] = JSON.parse(saved);
-        nextId = getMaxId(parsed) + 1;
-        return parsed;
-      }
-    } catch {}
-    nextId = getMaxId(initial) + 1;
-    return initial;
-  });
-
-  useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(nodes));
-  }, [nodes, storageKey]);
-
+/**
+ * État des nœuds d'un projet. L'état initial vient de la base ; la persistance
+ * est assurée par le parent, qui observe `nodes` et appelle saveProject.
+ */
+export function useCanvasNodes(initial: CanvasNode[]) {
+  const [nodes, setNodes] = useState<CanvasNode[]>(initial);
+  const [nextId, setNextId] = useState(() => getMaxId(initial) + 1);
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
 
   const selectNode = useCallback((id: string | null, shiftKey?: boolean) => {
@@ -101,13 +86,22 @@ export function useCanvasNodes(initial: CanvasNode[], projectId: string) {
     });
   }, []);
 
-  const addNode = useCallback((name: string, type: NodeType, x: number, y: number) => {
-    const newId = `node-${nextId++}`;
-    setNodes((prev) => {
-      const resolved = resolveOverlap(snap(x), snap(y), newId, prev);
-      return [...prev, { id: newId, type, label: name, ...resolved }];
-    });
+  const addNode = useCallback(
+    (name: string, type: NodeType, x: number, y: number, productId?: number) => {
+      const newId = `node-${nextId}`;
+      setNextId((n) => n + 1);
+      setNodes((prev) => {
+        const resolved = resolveOverlap(snap(x), snap(y), newId, prev);
+        return [...prev, { id: newId, type, label: name, productId, ...resolved }];
+      });
+    },
+    [nextId],
+  );
+
+  /** Mise à jour partielle d'un nœud (prix relevé, note…), depuis l'inspecteur. */
+  const updateNode = useCallback((id: string, patch: Partial<Omit<CanvasNode, "id">>) => {
+    setNodes((prev) => prev.map((n) => (n.id === id ? { ...n, ...patch } : n)));
   }, []);
 
-  return { nodes, selectedNodes, selectNode, deleteSelectedNodes, commitNodePosition, addNode };
+  return { nodes, selectedNodes, selectNode, deleteSelectedNodes, commitNodePosition, addNode, updateNode };
 }

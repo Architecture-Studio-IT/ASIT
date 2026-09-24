@@ -12,6 +12,8 @@ CMD ["npm", "run", "dev"]
 
 # Builder
 FROM base AS builder
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
 COPY package*.json ./
 COPY prisma ./prisma
 RUN npm ci

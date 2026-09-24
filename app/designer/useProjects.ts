@@ -1,93 +1,57 @@
-import { useState, useCallback, useEffect } from "react";
-import { STORAGE_KEYS } from "./constants";
+import { useState, useCallback } from "react";
+import {
+  createProject as createProjectAction,
+  deleteProject as deleteProjectAction,
+  renameProject as renameProjectAction,
+  type ProjectSummary,
+} from "../actions/projects";
 
-export interface Project {
-  id: string;
-  name: string;
-  createdAt: number;
-}
+export type Project = ProjectSummary;
 
-function generateId() {
-  return `proj-${Date.now()}`;
-}
+/**
+ * Liste des projets de l'utilisateur, persistée en base via les actions serveur.
+ * L'état local est mis à jour de façon optimiste puis réconcilié.
+ */
+export function useProjects(initialProjects: Project[], initialActiveId: string | null) {
+  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [activeProjectId, setActiveProjectId] = useState<string>(
+    initialActiveId ?? initialProjects[0]?.id ?? "",
+  );
+  const [error, setError] = useState<string | null>(null);
 
-const canUseStorage = typeof window !== "undefined";
-
-/** Migrate legacy flat keys into the first project's namespaced keys */
-function migrateLegacyData(projectId: string) {
-  if (!canUseStorage) return;
-  const legacyKeys = [
-    { old: "designer-nodes", newKey: STORAGE_KEYS.NODES(projectId) },
-    { old: "designer-connections", newKey: STORAGE_KEYS.CONNECTIONS(projectId) },
-    { old: "designer-notes", newKey: STORAGE_KEYS.NOTES(projectId) },
-  ];
-  for (const { old, newKey } of legacyKeys) {
-    const data = localStorage.getItem(old);
-    if (data) {
-      localStorage.setItem(newKey, data);
-      localStorage.removeItem(old);
+  const addProject = useCallback(async () => {
+    try {
+      const created = await createProjectAction();
+      setProjects((prev) => [created, ...prev]);
+      setActiveProjectId(created.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Création impossible");
     }
-  }
-}
-
-export function useProjects() {
-  const [projects, setProjects] = useState<Project[]>(() => {
-    if (!canUseStorage) return [{ id: "proj-1", name: "Project 1", createdAt: Date.now() }];
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.PROJECTS);
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    const defaultProject: Project = { id: "proj-1", name: "Project 1", createdAt: Date.now() };
-    migrateLegacyData(defaultProject.id);
-    return [defaultProject];
-  });
-
-  const [activeProjectId, setActiveProjectId] = useState<string>(() => {
-    if (!canUseStorage) return projects[0]?.id ?? "proj-1";
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.ACTIVE_PROJECT);
-      if (saved) return saved;
-    } catch {}
-    return projects[0]?.id ?? "proj-1";
-  });
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
-  }, [projects]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ACTIVE_PROJECT, activeProjectId);
-  }, [activeProjectId]);
-
-  const addProject = useCallback(() => {
-    const id = generateId();
-    const newProject: Project = {
-      id,
-      name: `Project ${projects.length + 1}`,
-      createdAt: Date.now(),
-    };
-    setProjects((prev) => [...prev, newProject]);
-    setActiveProjectId(id);
-  }, [projects.length]);
+  }, []);
 
   const deleteProject = useCallback(
-    (id: string) => {
+    async (id: string) => {
       if (projects.length <= 1) return;
-      localStorage.removeItem(STORAGE_KEYS.NODES(id));
-      localStorage.removeItem(STORAGE_KEYS.CONNECTIONS(id));
-      localStorage.removeItem(STORAGE_KEYS.NOTES(id));
-
-      setProjects((prev) => prev.filter((p) => p.id !== id));
-      if (activeProjectId === id) {
-        const remaining = projects.filter((p) => p.id !== id);
-        setActiveProjectId(remaining[0]?.id ?? "");
+      const remaining = projects.filter((p) => p.id !== id);
+      setProjects(remaining);
+      if (activeProjectId === id) setActiveProjectId(remaining[0]?.id ?? "");
+      try {
+        await deleteProjectAction(id);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Suppression impossible");
+        setProjects(projects);
       }
     },
     [projects, activeProjectId],
   );
 
-  const renameProject = useCallback((id: string, name: string) => {
+  const renameProject = useCallback(async (id: string, name: string) => {
     setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)));
+    try {
+      await renameProjectAction(id, name);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Renommage impossible");
+    }
   }, []);
 
   return {
@@ -97,5 +61,6 @@ export function useProjects() {
     addProject,
     deleteProject,
     renameProject,
+    error,
   };
 }

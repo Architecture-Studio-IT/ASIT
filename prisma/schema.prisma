@@ -11,14 +11,49 @@ datasource db {
   provider = "postgresql"
 }
 
+// ── Utilisateurs ───────────────────────────────────────────────────────────────
+// passwordhash est nul pour un compte créé via Google (OAuth2) : aucun mot de
+// passe local n'existe alors. googleSub est le `sub` stable renvoyé par Google.
+//
+// tosAcceptedAt / tosVersion : preuve d'acceptation des CGU (RGPD art. 7).
+// lastLoginAt : base de la purge des comptes inactifs à 24 mois (RGPD art. 5-1-e).
+// deletedAt   : marquage de suppression pour les traitements différés.
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  passwordhash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  passwordhash  String?
+  name          String?
+  googleSub     String?   @unique
+  avatarUrl     String?
+  tosAcceptedAt DateTime?
+  tosVersion    String?
+  lastLoginAt   DateTime?
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  projects Project[]
 }
 
+// ── Projets du designer ────────────────────────────────────────────────────────
+// nodes / connections / notes reprennent tels quels les objets que le canvas
+// manipule (CanvasNode[], Connection[], Record<nodeId, string>). Les stocker
+// en JSON évite de figer le modèle graphique en tables relationnelles.
+model Project {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      Int
+  name        String
+  nodes       Json     @default("[]")
+  connections Json     @default("[]")
+  notes       Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+// ── Catalogue ──────────────────────────────────────────────────────────────────
 model Manufacturer {
   id        Int      @id @default(autoincrement())
   name      String   @unique
@@ -28,23 +63,59 @@ model Manufacturer {
 
   products Product[]
 }
+
+// source     : origine de la fiche ("icecat", "ldlc"…). Sert à l'attribution
+//              exigée par l'Open Content License et à la traçabilité.
+// icecat_id  : identifiant Icecat, stable, unique dans leur référentiel.
+// raw_specs  : toutes les features Icecat telles que reçues (id, nom, valeur,
+//              unité). Permet d'améliorer le mapping sans re-télécharger.
+// sku n'est plus unique globalement : deux constructeurs peuvent partager une
+// référence. La clé naturelle est (constructeur, référence).
 model Product {
-  id              Int      @id @default(autoincrement())
+  id              Int          @id @default(autoincrement())
   manufacturer    Manufacturer @relation(fields: [manufacturer_id], references: [id])
   manufacturer_id Int
   product_type    String
   name            String
-  sku             String    @unique
-  image_url       String?   // ← nullable
-  warranty        String?   // ← nullable
-  scraped_url     String?   // ← utile pour le debug/re-scraping
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  model           String?      // référence courte du constructeur (Icecat ProductName), pour les libellés
+  sku             String
+  gtin            String?
+  icecat_id       Int?         @unique
+  source          String       @default("ldlc")
+  image_url       String?
+  warranty        String?
+  scraped_url     String?
+  datasheet_url   String?      // fiche technique PDF (Icecat Multimedia, sous Open Content License)
+  raw_specs       Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   productServer      Product_server?
-  productSwitch      Product_switch?        // ← renommé
-  productRouter      Product_router?        // ← séparé
-  productAccessPoint Product_access_point?  // ← singulier
+  productSwitch      Product_switch?
+  productRouter      Product_router?
+  productAccessPoint Product_access_point?
+  offers             Offer[]
+
+  @@unique([manufacturer_id, sku])
+}
+
+// ── Offres commerciales ────────────────────────────────────────────────────────
+// Le catalogue (Icecat) ne porte pas de prix. Une offre = un prix constaté chez
+// un marchand, importé depuis un flux partenaire ou un export CSV
+// (`npm run offers:import`). Le prix affiché est la meilleure offre du produit ;
+// sans offre, l'interface montre une estimation forfaitaire, signalée comme telle.
+model Offer {
+  id          Int      @id @default(autoincrement())
+  product     Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  product_id  Int
+  merchant    String
+  price_cents Int      // hors taxes, en centimes
+  currency    String   @default("EUR")
+  url         String?
+  fetched_at  DateTime @default(now())
+
+  @@unique([product_id, merchant])
+  @@index([product_id, price_cents])
 }
 
 model Product_server {
