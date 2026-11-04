@@ -20,6 +20,25 @@ ASIT is built around three core pillars:
 
 The platform is designed to be accessible, sovereign, and compliant with European regulations, while remaining powerful enough for professional use cases.
 
+## Getting Started
+You can run the program in 2 mode, Server or Standalone
+
+### Server
+You need to have [node.js](https://nodejs.org/en/download) installed
+To start the server: `npm run dev` or `npm run build`
+
+### Standalone
+You need to have:
+- MSVC (Visual studio with Desktop development with C++)
+- WebView2 (exist by default in windows 11)
+- VBSCRIPT (ONLY if you want to build the `.msi` installer)
+- Rust (`winget install --id Rustlang.Rustup` or https://rust-lang.org/tools/install/)
+- Node.js ([Download the Standalone binary](https://nodejs.org/en/download) in `.zip` and place it inside `src-tauri/resources`)
+
+To start the standalone app: `npm run tauri dev`
+
+To build the app: `npm run tauri build`, file will be inside `./src-tauri/target/release` for the compiled app and inside `./src-tauri/target/release/bundle` for the installer (both `.msi` and `.exe`)
+
 ## Environment configuration
 
 The project relies on a dotenv file to store sensitive credentials. An example template is provided in `.env.exemple`.
