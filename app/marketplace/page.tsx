@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { getProducts, getManufacturers, getProductTypes } from "../actions/products";
 import MarketplaceClient from "./MarketplaceClient";
 

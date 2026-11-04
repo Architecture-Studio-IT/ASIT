@@ -1,0 +1,8 @@
+{
+  "bundle": {
+    "resources": {
+      "../.next/standalone/": "next-server/",
+      "resources/node.exe": "node.exe"
+    }
+  }
+}
